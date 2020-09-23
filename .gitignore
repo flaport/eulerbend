@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# GDS files
+*.gds
+
 # C extensions
 *.so
 
