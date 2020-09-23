@@ -9,14 +9,14 @@ import technologies.silicon_photonics
 import ipkiss3.all as i3
 
 
-def _euler_bend_center_line_shape(R=10, theta=np.pi / 2, num_points=1000):
+def _euler_bend_center_line_shape(R=10, theta=np.pi/2, num_points=1000):
     """
     Args:
         R (float): minimal bend radius
-        theta (float): final angle
+        theta (float): final angle (in radians)
         num_points (int): resolution of the shape
     """
-    L = 2 * R * theta / 2  # HALF of total length
+    L = R * theta  # HALF of total length
     s = np.linspace(0, L, num_points // 2)
     f = np.sqrt(np.pi * R * L) + 1e-18  # for numerical stability
     y1, x1 = fresnel(s / f)
@@ -57,13 +57,12 @@ class EulerBend(i3.PCell):
             if self.end_point is None:
                 return 10
             x, y = self.end_point
-            theta = 2 * np.arctan2(
-                y, x
-            )  # the final angle is twice the angle between start and finish.
-            x1, y1 = euler_bend(R=1, theta=theta, num_points=4)
-            return x / x1[-1]
+            # the final angle is twice the angle between start and finish.
+            theta = 2 * np.arctan2(y, x)  
+            x_final = _euler_bend_center_line_shape(R=1, theta=theta, num_points=4)[-1][0]
+            return x / x_final
 
-        end_angle = i3.PositiveNumberProperty(doc="angle at the end of the Euler bend.")
+        end_angle = i3.PositiveNumberProperty(doc="angle (in degrees) at the end of the Euler bend.")
         def _default_end_angle(self):
             if self.end_point is None:
                 return 90
@@ -82,12 +81,22 @@ class EulerBend(i3.PCell):
             ),
             default=None,
         )
+        
+        core_width = i3.PositiveNumberProperty(
+            doc="default core width of the waveguide",
+            default=i3.TECH.WG.WIRE_WIDTH,
+        )
+        
+        cladding_width = i3.PositiveNumberProperty(
+            doc="default cladding width of the waveguide",
+            default=i3.TECH.WG.CLADDING_WIDTH,
+        )
 
         def _default_trace_template(self):
             trace = self.cell.trace_template.get_default_view(i3.LayoutView)
             trace.set(
-                core_width=1,
-                cladding_width=5,
+                core_width=self.core_width,
+                cladding_width=self.cladding_width,
             )
             return trace
 
@@ -116,6 +125,7 @@ class EulerBend(i3.PCell):
 
 if __name__ == "__main__":
     cell = EulerBend()
-    layout = cell.Layout(min_radius=10, end_angle=90)
-    layout.visualize(annotate=True)
-    layout.write_gdsii("eulerbend.gds")
+    layout = cell.Layout(end_angle=90, core_width=1, min_radius=10)
+    layout.visualize(annotate=True, show=False)
+    plt.grid()
+    plt.show()
