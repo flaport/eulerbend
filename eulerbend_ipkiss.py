@@ -126,6 +126,5 @@ class EulerBend(i3.PCell):
 if __name__ == "__main__":
     cell = EulerBend()
     layout = cell.Layout(end_angle=90, core_width=1, min_radius=10)
-    layout.visualize(annotate=True, show=False)
-    plt.grid()
-    plt.show()
+    layout.visualize(annotate=True)
+    layout.write_gdsii("eulerbend.gds")
